@@ -3,6 +3,12 @@
 #include "TMath.h"
 
 
+// For cuts
+enum { kAll = 1, kET, kSiBunch, kTrigger, kOppTrack, kTheta, kx0y0, kFiducial, kMax };
+
+// For triggers
+enum { t_CPT2 = 1, t_CPT2noBBCL, t_SDT, t_ET, t_CPTnoBBCL, t_Max };
+
 // Fiducial cuts                                                                                                                                                                     
 const Int_t NFB = 50 ; // no. of fiducial bins                                                                                                                                       
 Double_t fidcut[8][NFB] ;
@@ -12,6 +18,7 @@ Double_t fidpos[8][NFB] ;
 
 
 const Int_t nsigma = 3 ;
+//const Int_t nsigma = 2 ;
 
 const Int_t ERRCODE = -999 ;
 
@@ -87,8 +94,23 @@ TH1D *hUD[intv], *hDU[intv] ; /// for counting Up-Down and Down-Up entries
 TH1D *raw_asym[intv] ; /// raw_asymmetries 
 TH1D *false_asym[intv] ; /// false raw_asymmetries 
 
+TH1I *hAnalysisFlow ; // Cuts Flow
 
-const double div1 = 0.15, div2 = 0.2, div3 = 0.3, div4 = 1. ;
+TH1I *hTriggers ; // Triggers
+
+TH1D *htrig_ADC, *htrig_TAC ; // ADC/TAC in RP trigger PMT
+
+TH1D *hTOFHits_C ; // No. of TOF hits for CPTnoBBCL
+TH1D *hTOFHits_O ; // No. of TOF hits for non-CPTnoBBCL events
+
+TH1D *hTOFMult_C ; // No. of TOF Mult (trigger) for CPTnoBBCL
+TH1D *hTOFMult_O ; // No. of TOF Mult (trigger) for non-CPTnoBBCL events
+
+
+TH2D *hTOFHits_vs_Mult ; // TOF Hits vs TOF Trigger Multiplicity
+
+
+const double div1 = 0.2, div2 = 0.35, div3 = 1.0, div4 = 10. ;
 
 const Double_t LowerBoundY = -0.077 ;
 const Double_t UpperBoundY =  0.079 ;
@@ -225,12 +247,12 @@ void make_histograms() {
 
   //  char RPPlane[4][2] = { "A", "B", "C", "D" } ;
 
-  hx0 = new TH1D("hx0", "Vertices of x_{IP}", 100, -0.01, 0.01);
-  hy0 = new TH1D("hy0", "Vertices of y_{IP}", 100, -0.02, 0.02);
+  hx0 = new TH1D("hx0", "x_{0}(W) - x_{0}(E)", 100, -0.02, 0.02);
+  hy0 = new TH1D("hy0", "y_{0}(W) - y_{0}(E)", 100, -0.02, 0.02);
   hz0 = new TH1D("hz0", "Vertices of z_{IP}", 100, -10.0, 10.0);
 
   hx02 = new TH1D("hx02", "Vertices of x_{IP}", 100, -0.01, 0.01);
-  hy02 = new TH1D("hy02", "Vertices of y_{IP}", 100, -0.02, 0.02);
+  hy02 = new TH1D("hy02", "Vertices of y_{IP}", 100, -0.01, 0.01);
   hz02 = new TH1D("hz02", "Vertices of z_{IP}", 100, -10.0, 10.0);
 
   diff_thetax = new TH1D("diff_thetax", "Difference of theta_x", 100, -0.002, 0.002);
@@ -243,9 +265,9 @@ void make_histograms() {
   hy7 = new TH1D("hy7", "y coordinates of W2D", 60, -0.075, -0.015); 
   hdiff_y5_y7 = new TH1D("hdiff_y5_y7", "diff. of y coordinates of W1D & W2D", 100, -0.01, 0.01); 
 
-  hm_t = new TH1D("hm_t","-t", 50, 0., 2.) ;
-  hm_t_EUWD = new TH1D("hm_t_EUWD","-t for EU-WD", 50, 0., 2.) ;
-  hm_t_EDWU = new TH1D("hm_t_EDWU","-t for ED-WU", 50, 0., 2.) ;
+  hm_t = new TH1D("hm_t","-t", 50, 0., 1.) ;
+  hm_t_EUWD = new TH1D("hm_t_EUWD","-t for EU-WD", 50, 0., 1.) ;
+  hm_t_EDWU = new TH1D("hm_t_EDWU","-t for ED-WU", 50, 0., 1.) ;
 
   // Using UA4 variable -t bins
   const Int_t NBINS = 36;
@@ -265,8 +287,8 @@ void make_histograms() {
   hphi = new TH1D("hphi","#phi", 100., -180., 180.) ;
   ht_vs_phi = new TH2D("ht_vs_phi","-t vs #phi", 100, -180., 180., 100, 0., 1.) ;
 
-  hdiff_from_fit_thetax = new TH1D("hdiff_from_fit_thetax", "theta_x(fit) - (thetax1+thetax2)/2", 100, -0.002, 0.002);
-  hdiff_from_fit_thetay = new TH1D("hdiff_from_fit_thetay", "theta_y(fit) - (thetay1+thetay2)/2", 100, -0.002, 0.002);
+  hdiff_from_fit_thetax = new TH1D("hdiff_from_fit_thetax", "theta_x(fit) - (thetax1+thetax2)/2", 100, -0.001, 0.001);
+  hdiff_from_fit_thetay = new TH1D("hdiff_from_fit_thetay", "theta_y(fit) - (thetay1+thetay2)/2", 100, -0.001, 0.001);
 
   E1U_W1D_xy = new TH2D("E1U_W1D_xy","xy positions of E1U and W1D", 100, -0.041, 0.065, 100, -0.077, 0.079) ;
   E2U_W2D_xy = new TH2D("E2U_W2D_xy","xy positions of E2U and W2D", 100, -0.041, 0.065, 100, -0.077, 0.079) ;
@@ -301,8 +323,8 @@ void make_histograms() {
   //
   //  char CRanges[intv-1][25] = {  "-t < 0.1", "0.1 #leq -t < 0.3", "0.3 #leq -t < 4.", 
   //				"4. #leq -t < 40000.", "40000. #leq -t"  } ;
-  char CRanges[intv-1][25] = {  "-t < 0.15", "0.15 #leq -t < 0.2", "0.2 #leq -t < 0.3", 
-  				"0.3 #leq -t < 1.", "1. #leq -t"  } ;
+  char CRanges[intv-1][25] = {  "-t < 0.2", "0.2 #leq -t < 0.35", "0.35 #leq -t < 1", 
+  				"1. #leq -t", "Nothing"  } ;
 
   for ( Int_t i = 1 ; i<intv; i++ ) {
 
@@ -332,6 +354,28 @@ void make_histograms() {
 
   }
 
+
+  hAnalysisFlow = new TH1I("AnalysisFlow", "CutsFlow", kMax-1, 1, kMax);
+  TString summaryLabels[] = { TString("All"), TString("ET"), TString("Si Bunch"), TString("Trig & RP"), 
+			      TString("Opp Track"), TString("3#sigma(#Delta#theta)"), TString("x0/y0"), TString("Fiducial") };
+  for(int tb=1; tb<kMax; ++tb)
+    hAnalysisFlow->GetXaxis()->SetBinLabel(tb, summaryLabels[tb-1]);
+
+  hTriggers = new TH1I("Triggers", "Which Triggers", t_Max-1, 1, t_Max);
+  TString triggerLabels[] = { TString("CPT2"), TString("CPT2noBBCL"), TString("SDT"), TString("ET"), TString("CPTnoBBCL") };
+  for(int tb=1; tb<t_Max; ++tb)
+    hTriggers->GetXaxis()->SetBinLabel(tb, triggerLabels[tb-1]);
+
+  htrig_ADC = new TH1D("trig_ADC", "Trigger PMT ADC", 100, 0., 2000.);
+  htrig_TAC = new TH1D("trig_TAC", "Trigger PMT TAC", 100, 0., 2000.);
+
+  hTOFHits_C = new TH1D("TOFHits_C", "No. of TOF Hits for CPTnoBBCL triggers", 50, 0., 50);
+  hTOFHits_O = new TH1D("TOFHits_O", "No. of TOF Hits for non-CPTnoBBCL triggers", 50, 0., 50);
+
+  hTOFMult_C = new TH1D("TOFMult_C", "No. of TOF Multiplicity for CPTnoBBCL triggers", 50, 0., 50);
+  hTOFMult_O = new TH1D("TOFMult_O", "No. of TOF Multiplicity for non-CPTnoBBCL triggers", 50, 0., 50);
+
+  hTOFHits_vs_Mult = new TH2D("TOFHits_vs_Mult","TOF Hits vs Trigger Multiplicity", 50, 0., 50., 50, 0., 50.) ;
 
   // Remember to put in ->Write() in finish_histogram()
 
